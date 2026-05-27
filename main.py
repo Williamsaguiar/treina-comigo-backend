@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from models import Academia
 
 from sqlalchemy import (
     create_engine,
@@ -173,6 +174,15 @@ Base.metadata.create_all(
 # ROTAS
 # =========================
 
+@app.get("/academias")
+
+def listar_academias(db: Session = Depends(get_db)):
+
+    academias =
+        db.query(Academia).all()
+
+    return academias
+
 @app.get("/")
 
 def home():
@@ -185,6 +195,35 @@ def home():
 # =========================
 # USUÁRIOS
 # =========================
+
+@app.post("/academias")
+
+def criar_academia(
+    academia: dict,
+    db: Session = Depends(get_db)
+):
+
+    nova_academia = Academia(
+
+        nome=academia["nome"],
+
+        bairro=academia["bairro"],
+
+        endereco=academia["endereco"],
+
+        nota=academia["nota"],
+
+        imagem=academia["imagem"],
+
+    )
+
+    db.add(nova_academia)
+
+    db.commit()
+
+    db.refresh(nova_academia)
+
+    return nova_academia
 
 @app.post("/cadastro")
 
