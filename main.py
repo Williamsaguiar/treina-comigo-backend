@@ -1,6 +1,7 @@
 from models.favorito import Favorito
 from models.avaliacao import Avaliacao
 from models.mensagem import Mensagem
+from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.orm import Session
 from fastapi import Depends
@@ -17,6 +18,19 @@ from models.user import User
 from auth.security import criar_token
 
 app = FastAPI()
+
+app.add_middleware(
+
+    CORSMiddleware,
+
+    allow_origins=["*"],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
+)
 
 def get_db():
 
