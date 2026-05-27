@@ -1,24 +1,45 @@
-from models.favorito import Favorito
-from models.avaliacao import Avaliacao
-from models.mensagem import Mensagem
-from fastapi.middleware.cors import CORSMiddleware
-
-from sqlalchemy.orm import Session
-from fastapi import Depends
-from database.database import SessionLocal
-
-from models.agendamento import Agendamento
-from models.personal import Personal
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from database.database import engine, SessionLocal
-from models.user import User
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+)
 
-from auth.security import criar_token
+from sqlalchemy.ext.declarative import declarative_base
+
+from sqlalchemy.orm import sessionmaker
+
+# =========================
+# DATABASE
+# =========================
+
+DATABASE_URL = "postgresql://neondb_owner:npg_Rpvj3k1LCFDu@ep-wispy-meadow-ac191iug-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+
+engine = create_engine(
+    DATABASE_URL
+)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
+
+Base = declarative_base()
+
+# =========================
+# APP
+# =========================
 
 app = FastAPI()
 
+# =========================
+# CORS
+# =========================
+
 app.add_middleware(
 
     CORSMiddleware,
@@ -32,190 +53,254 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-def get_db():
+# =========================
+# MODELOS
+# =========================
 
-    db = SessionLocal()
+class Usuario(Base):
 
-    try:
-        yield db
+    __tablename__ = "usuarios"
 
-    finally:
-        db.close()
-
-from database.database import Base
-
-Base.metadata.create_all(bind=engine)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/")
-def home():
-    return {
-        "message": "API Treina Comigo Online 🚀"
-    }
-
-
-@app.get("/academias")
-def academias():
-
-    return [
-
-        {
-            "id": 1,
-            "nome": "IronFit Academia",
-            "imagem": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1200",
-            "avaliacao": 4.8,
-            "distancia": "350m",
-            "diaria": 25
-        },
-
-        {
-            "id": 2,
-            "nome": "Blue Gym",
-            "imagem": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=1200",
-            "avaliacao": 4.7,
-            "distancia": "500m",
-            "diaria": 20
-        }
-    ]
-
-
-@app.post("/cadastro")
-def cadastro(usuario: dict):
-
-    db = SessionLocal()
-
-    novo_usuario = User(
-        nome=usuario["nome"],
-        email=usuario["email"],
-        senha=usuario["senha"],
-        tipo=usuario["tipo"]
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
     )
 
-    db.add(novo_usuario)
+    nome = Column(String)
+
+    email = Column(
+        String,
+        unique=True
+    )
+
+    senha = Column(String)
+
+
+class Agendamento(Base):
+
+    __tablename__ = "agendamentos"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    nome = Column(String)
+
+    horario = Column(String)
+
+
+class Favorito(Base):
+
+    __tablename__ = "favoritos"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    nome = Column(String)
+
+
+class Avaliacao(Base):
+
+    __tablename__ = "avaliacoes"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    nome = Column(String)
+
+    comentario = Column(String)
+
+    nota = Column(Integer)
+
+
+class Mensagem(Base):
+
+    __tablename__ = "mensagens"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    remetente = Column(String)
+
+    destinatario = Column(String)
+
+    mensagem = Column(String)
+
+
+# =========================
+# NOVO MODELO TREINOS
+# =========================
+
+class Treino(Base):
+
+    __tablename__ = "treinos"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    nome = Column(String)
+
+    objetivo = Column(String)
+
+    nivel = Column(String)
+
+    descricao = Column(String)
+
+# =========================
+# CRIAR TABELAS
+# =========================
+
+Base.metadata.create_all(
+    bind=engine
+)
+
+# =========================
+# ROTAS
+# =========================
+
+@app.get("/")
+
+def home():
+
+    return {
+        "mensagem":
+        "API ONLINE 🚀"
+    }
+
+# =========================
+# USUÁRIOS
+# =========================
+
+@app.post("/cadastro")
+
+def cadastro(
+
+    nome: str,
+
+    email: str,
+
+    senha: str,
+):
+
+    db = SessionLocal()
+
+    usuario = Usuario(
+
+        nome=nome,
+
+        email=email,
+
+        senha=senha,
+    )
+
+    db.add(usuario)
 
     db.commit()
 
-    db.refresh(novo_usuario)
-
     return {
-        "message": "Usuário cadastrado com sucesso 🚀"
+        "mensagem":
+        "Usuário cadastrado"
     }
 
 
 @app.post("/login")
-def login(usuario: dict):
+
+def login(
+
+    email: str,
+
+    senha: str,
+):
 
     db = SessionLocal()
 
-    usuario_db = db.query(User).filter(
-        User.email == usuario["email"]
+    usuario = db.query(
+        Usuario
+    ).filter(
+
+        Usuario.email == email,
+
+        Usuario.senha == senha
+
     ).first()
 
-    if not usuario_db:
-        return {
-            "error": "Usuário não encontrado"
-        }
+    if usuario:
 
-    if usuario_db.senha != usuario["senha"]:
         return {
-            "error": "Senha inválida"
+            "mensagem":
+            "Login realizado"
         }
-
-    token = criar_token({
-        "id": usuario_db.id,
-        "email": usuario_db.email
-    })
 
     return {
-        "token": token,
-        "usuario": {
-            "id": usuario_db.id,
-            "nome": usuario_db.nome,
-            "tipo": usuario_db.tipo
-        }
+        "erro":
+        "Usuário inválido"
     }
 
-@app.get("/personais")
-def listar_personais():
 
-    return [
+@app.get("/usuarios")
 
-        {
-            "id": 1,
-            "nome": "Carlos Personal",
-            "foto": "https://images.unsplash.com/photo-1567013127542-490d757e51fc?q=80&w=1200",
-            "especialidade": "Hipertrofia",
-            "descricao": "Treinos para ganho de massa muscular",
-            "valor_hora": 80
-        },
+def listar_usuarios():
 
-        {
-            "id": 2,
-            "nome": "Ana Fitness",
-            "foto": "https://images.unsplash.com/photo-1594737625785-a6cbdabd333c?q=80&w=1200",
-            "especialidade": "Emagrecimento",
-            "descricao": "Treinos para perda de gordura",
-            "valor_hora": 70
-        }
-    ]
+    db = SessionLocal()
+
+    usuarios = db.query(
+        Usuario
+    ).all()
+
+    return usuarios
+
+# =========================
+# AGENDAMENTOS
+# =========================
 
 @app.post("/agendamentos")
+
 def criar_agendamento(
-    dados: dict,
-    db: Session = Depends(get_db)
+
+    nome: str,
+
+    horario: str,
 ):
 
-    agendamento_existente = db.query(
-        Agendamento
-    ).filter(
+    db = SessionLocal()
 
-        Agendamento.personal == dados["personal"],
+    agendamento = Agendamento(
 
-        Agendamento.data == dados["data"],
+        nome=nome,
 
-        Agendamento.horario == dados["horario"]
-
-    ).first()
-
-    if agendamento_existente:
-
-        return {
-            "error": "Horário já agendado"
-        }
-
-    novo_agendamento = Agendamento(
-
-        aluno=dados["aluno"],
-
-        personal=dados["personal"],
-
-        data=dados["data"],
-
-        horario=dados["horario"],
+        horario=horario,
     )
 
-    db.add(novo_agendamento)
+    db.add(agendamento)
 
     db.commit()
 
-    db.refresh(novo_agendamento)
-
     return {
-        "message": "Treino agendado com sucesso 🚀"
+        "mensagem":
+        "Treino agendado"
     }
+
 
 @app.get("/agendamentos")
-def listar_agendamentos(
-    db: Session = Depends(get_db)
-):
+
+def listar_agendamentos():
+
+    db = SessionLocal()
 
     agendamentos = db.query(
         Agendamento
@@ -223,99 +308,38 @@ def listar_agendamentos(
 
     return agendamentos
 
-@app.delete("/agendamentos/{agendamento_id}")
-def deletar_agendamento(
-    agendamento_id: int,
-    db: Session = Depends(get_db)
-):
-
-    agendamento = db.query(
-        Agendamento
-    ).filter(
-        Agendamento.id == agendamento_id
-    ).first()
-
-    if not agendamento:
-
-        return {
-            "error": "Agendamento não encontrado"
-        }
-
-    db.delete(agendamento)
-
-    db.commit()
-
-    return {
-        "message": "Agendamento cancelado 🚀"
-    }
-
-@app.get("/agendamentos/personal/{nome}/{data}")
-def listar_agendamentos_personal(
-    nome: str,
-    data: str,
-    db: Session = Depends(get_db)
-):
-
-    agendamentos = db.query(
-        Agendamento
-    ).filter(
-
-        Agendamento.personal == nome,
-
-        Agendamento.data == data
-
-    ).all()
-
-    return agendamentos
+# =========================
+# FAVORITOS
+# =========================
 
 @app.post("/favoritos")
-def criar_favorito(
-    dados: dict,
-    db: Session = Depends(get_db)
+
+def adicionar_favorito(
+
+    nome: str,
 ):
 
-    favorito_existente = db.query(
-        Favorito
-    ).filter(
+    db = SessionLocal()
 
-        Favorito.aluno == dados["aluno"],
-
-        Favorito.personal == dados["personal"]
-
-    ).first()
-
-    if favorito_existente:
-
-        return {
-            "error": "Personal já favoritado"
-        }
-
-    novo_favorito = Favorito(
-
-        aluno=dados["aluno"],
-
-        personal=dados["personal"],
-
-        foto=dados["foto"],
-
-        especialidade=dados["especialidade"],
+    favorito = Favorito(
+        nome=nome
     )
 
-    db.add(novo_favorito)
+    db.add(favorito)
 
     db.commit()
 
-    db.refresh(novo_favorito)
-
     return {
-        "message": "Favoritado com sucesso ❤️"
+        "mensagem":
+        "Favorito adicionado"
     }
 
 
 @app.get("/favoritos")
-def listar_favoritos(
-    db: Session = Depends(get_db)
-):
+
+def listar_favoritos():
+
+    db = SessionLocal()
 
     favoritos = db.query(
         Favorito
@@ -323,84 +347,163 @@ def listar_favoritos(
 
     return favoritos
 
+# =========================
+# AVALIAÇÕES
+# =========================
+
 @app.post("/avaliacoes")
+
 def criar_avaliacao(
-    dados: dict,
-    db: Session = Depends(get_db)
+
+    nome: str,
+
+    comentario: str,
+
+    nota: int,
 ):
 
-    nova_avaliacao = Avaliacao(
+    db = SessionLocal()
 
-        aluno=dados["aluno"],
+    avaliacao = Avaliacao(
 
-        personal=dados["personal"],
+        nome=nome,
 
-        nota=dados["nota"],
+        comentario=comentario,
 
-        comentario=dados["comentario"],
+        nota=nota,
     )
 
-    db.add(nova_avaliacao)
+    db.add(avaliacao)
 
     db.commit()
 
-    db.refresh(nova_avaliacao)
-
     return {
-        "message": "Avaliação enviada ⭐"
+        "mensagem":
+        "Avaliação criada"
     }
 
 
-@app.get("/avaliacoes/{personal}")
+@app.get("/avaliacoes/{nome}")
+
 def listar_avaliacoes(
-    personal: str,
-    db: Session = Depends(get_db)
+    nome: str
 ):
+
+    db = SessionLocal()
 
     avaliacoes = db.query(
         Avaliacao
     ).filter(
-        Avaliacao.personal == personal
+
+        Avaliacao.nome == nome
+
     ).all()
 
     return avaliacoes
 
+# =========================
+# MENSAGENS
+# =========================
+
 @app.post("/mensagens")
+
 def enviar_mensagem(
-    dados: dict,
-    db: Session = Depends(get_db)
+
+    remetente: str,
+
+    destinatario: str,
+
+    mensagem: str,
 ):
+
+    db = SessionLocal()
 
     nova_mensagem = Mensagem(
 
-        aluno=dados["aluno"],
+        remetente=remetente,
 
-        personal=dados["personal"],
+        destinatario=destinatario,
 
-        mensagem=dados["mensagem"],
+        mensagem=mensagem,
     )
 
     db.add(nova_mensagem)
 
     db.commit()
 
-    db.refresh(nova_mensagem)
-
     return {
-        "message": "Mensagem enviada 🚀"
+        "mensagem":
+        "Mensagem enviada"
     }
 
 
-@app.get("/mensagens/{personal}")
+@app.get("/mensagens/{destinatario}")
+
 def listar_mensagens(
-    personal: str,
-    db: Session = Depends(get_db)
+    destinatario: str
 ):
+
+    db = SessionLocal()
 
     mensagens = db.query(
         Mensagem
     ).filter(
-        Mensagem.personal == personal
+
+        Mensagem.destinatario
+        == destinatario
+
     ).all()
 
     return mensagens
+
+# =========================
+# TREINOS
+# =========================
+
+@app.post("/treinos")
+
+def criar_treino(
+
+    nome: str,
+
+    objetivo: str,
+
+    nivel: str,
+
+    descricao: str,
+):
+
+    db = SessionLocal()
+
+    treino = Treino(
+
+        nome=nome,
+
+        objetivo=objetivo,
+
+        nivel=nivel,
+
+        descricao=descricao,
+    )
+
+    db.add(treino)
+
+    db.commit()
+
+    return {
+        "mensagem":
+        "Treino criado"
+    }
+
+
+@app.get("/treinos")
+
+def listar_treinos():
+
+    db = SessionLocal()
+
+    treinos = db.query(
+        Treino
+    ).all()
+
+    return treinos
