@@ -178,3 +178,40 @@ def criar_academia(
     db.refresh(nova_academia)
 
     return nova_academia
+
+# AGENDAMENTOS
+@app.post("/agendamentos")
+
+def criar_agendamento(
+    agendamento: dict
+):
+
+    return {
+
+        "mensagem":
+        f"Treino '{agendamento['nome']}' agendado para {agendamento['horario']} 🚀"
+
+    }
+
+# PERSONAIS
+@app.get("/personais")
+
+def listar_personais():
+
+    return [
+
+        {
+            "id": 1,
+            "nome": "Carlos Henrique",
+            "especialidade": "Hipertrofia",
+            "foto": "https://randomuser.me/api/portraits/men/32.jpg"
+        },
+
+        {
+            "id": 2,
+            "nome": "Amanda Silva",
+            "especialidade": "Emagrecimento",
+            "foto": "https://randomuser.me/api/portraits/women/44.jpg"
+        }
+
+    ]
