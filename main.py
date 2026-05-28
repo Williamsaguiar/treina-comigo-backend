@@ -3,12 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.orm import Session
 
-from database import SessionLocal, engine
-from models import Base, Usuario, Treino, Academia
+from database import SessionLocal, engine, Base
+from models import Usuario, Treino, Academia
 
 app = FastAPI()
 
-# CRIAR TABELAS NO NEON
 Base.metadata.create_all(bind=engine)
 
 # CORS
@@ -20,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CONEXÃO DB
+# DATABASE
 def get_db():
 
     db = SessionLocal()
@@ -40,7 +39,7 @@ def get_db():
 def home():
 
     return {
-        "mensagem": "Treina Comigo API Online 🚀"
+        "mensagem": "Treina Comigo API 🚀"
     }
 
 
@@ -70,15 +69,11 @@ def login(
 
     return {
         "mensagem": "Login realizado com sucesso",
-        "usuario": {
-            "id": usuario.id,
-            "nome": usuario.nome,
-            "email": usuario.email
-        }
+        "usuario": usuario.nome
     }
 
 
-# CRIAR USUÁRIO
+# CRIAR USUARIO
 @app.post("/usuarios")
 
 def criar_usuario(
@@ -112,9 +107,7 @@ def listar_treinos(
     db: Session = Depends(get_db)
 ):
 
-    treinos = db.query(Treino).all()
-
-    return treinos
+    return db.query(Treino).all()
 
 
 # CRIAR TREINO
@@ -153,9 +146,7 @@ def listar_academias(
     db: Session = Depends(get_db)
 ):
 
-    academias = db.query(Academia).all()
-
-    return academias
+    return db.query(Academia).all()
 
 
 # CRIAR ACADEMIA
@@ -187,18 +178,3 @@ def criar_academia(
     db.refresh(nova_academia)
 
     return nova_academia
-
-
-# AGENDAMENTOS
-@app.post("/agendamentos")
-
-def criar_agendamento(
-    agendamento: dict
-):
-
-    return {
-
-        "mensagem":
-        f"Treino '{agendamento['nome']}' agendado para {agendamento['horario']} 🚀"
-
-    }
