@@ -1,3 +1,6 @@
+from sqlalchemy import Column, Integer, String
+from database import Base
+
 class Academia(Base):
 
     __tablename__ = "academias"
