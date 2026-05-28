@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from sqlalchemy.orm import Session
 
-from database import SessionLocal, engine, Base
+from database.database import SessionLocal, engine, Base
 from models import Usuario, Treino, Academia
 
 app = FastAPI()
